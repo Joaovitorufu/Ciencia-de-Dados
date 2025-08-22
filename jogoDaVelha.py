@@ -3,6 +3,8 @@ from sklearn.model_selection import train_test_split
 
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score, precision_score, recall_score
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 
 #nomes das colunas com base no arquivo .names.
 column_names = [
@@ -79,4 +81,34 @@ def imprimir_metricas(nome_modelo, y_test_verdadeiro, y_previsao):
 imprimir_metricas("k-NN com k=3", y_test, y_pred_knn_k3)
 imprimir_metricas("k-NN com k=7", y_test, y_pred_knn_k7)
 
+
+# modelo 2 : arvore de decisão
+print("Iniciando Treinamento : Árvore de Decisão com profundidade 3")
+tree_d3 = DecisionTreeClassifier(max_depth=3, random_state=42)
+tree_d3.fit(X_train, y_train)
+y_pred_tree_d3 = tree_d3.predict(X_test)
+
+print("Iniciando Treinamento : Árvore de Decisão com profundidade 10")
+tree_d10 = DecisionTreeClassifier(max_depth=10, random_state=42)
+tree_d10.fit(X_train, y_train)
+y_pred_tree_d10 = tree_d10.predict(X_test)
+
+imprimir_metricas("Arvore de decisão com profundidade 3", y_test, y_pred_tree_d3)
+imprimir_metricas("Árvore de decisão com profundidade 10", y_test, y_pred_tree_d10)
+
+#modelo 3 Random Forest
+print("\n Iniciando treinamento : Random Forest com 10 árvores")
+
+rf_10 = RandomForestClassifier(n_estimators=10, random_state=42, max_depth=10)
+rf_10.fit(X_train, y_train)
+y_pred_rf_10 = rf_10.predict(X_test)
+
+print("Iniciando treinamento : Random Forest com 100 arvores")
+
+rf_100 = RandomForestClassifier(n_estimators=100, random_state=42, max_depth=100)
+rf_100.fit(X_train, y_train)
+y_pred_rf_100 = rf_100.predict(X_test)
+
+imprimir_metricas("Random FOrest com 10 árvores", y_test, y_pred_rf_10)
+imprimir_metricas("Random Forest com 100 arvores", y_test, y_pred_rf_100)
 

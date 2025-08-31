@@ -1,11 +1,14 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+import seaborn as sns
 import numpy as np
 from collections import Counter
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import accuracy_score, precision_score, recall_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score,confusion_matrix
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
+
 
 #nomes das colunas com base no arquivo .names.
 column_names = [
@@ -37,6 +40,32 @@ def preprocessar_dados(baseDeDados):
     y_encoded = y.map({'positive': 1, 'negative': 0})
     return X_encoded, y_encoded
 
+def salvar_matriz_confusao(nome_modelo, y_test_verdadeiro, y_previsao , cmap='Blues'):
+    cm = confusion_matrix(y_test_verdadeiro, y_previsao)
+    plt.figure(figsize=[8,6])
+    sns.heatmap(cm, annot=True, cmap=cmap, fmt='d',
+                xticklabels=['Negativo (0)', 'Positivo (1)'],
+                yticklabels=['Negativo (0)', 'Positivo (1)'])
+    plt.xlabel('Previsão do Modelo')
+    plt.ylabel('Valor Real')
+    plt.title(f'Matriz de Confusão - {nome_modelo}')
+
+    filename = f'matriz_confusao_{nome_modelo.replace(" ","_").lower()}.png'
+    plt.savefig(filename)
+    print(f"Gráfico da matriz de confusão salvo como '{filename}'")
+    plt.close()
+
+def imprimir_metricas(nome_modelo, y_test_verdadeiro, y_previsao):
+    acc = accuracy_score(y_test_verdadeiro, y_previsao)
+    prec = precision_score(y_test_verdadeiro, y_previsao)
+    rec = recall_score(y_test_verdadeiro, y_previsao)
+    cm = confusion_matrix(y_test_verdadeiro, y_previsao)
+
+    print(f"\nResultados para {nome_modelo}:")
+    print(f"Acurácia: {acc:.4f}")
+    print(f"Precisão: {prec:.4f}")
+    print(f"Revocação: {rec:.4f}")
+    print(f"Matriz de Confusão:\n{cm}")
 #aplicando a função de preprocessamento para obter x e y enconded
 X_encoded, y_encoded = preprocessar_dados(df)
 
@@ -67,33 +96,31 @@ knn_k7.fit(X_train, y_train)
 y_pred_knn_k3 = knn_k3.predict(X_test)
 y_pred_knn_k7 = knn_k7.predict(X_test)
 
-def imprimir_metricas(nome_modelo, y_test_verdadeiro, y_previsao):
-    acc = accuracy_score(y_test_verdadeiro, y_previsao)
-    prec = precision_score(y_test_verdadeiro, y_previsao)
-    rec = recall_score(y_test_verdadeiro, y_previsao)
 
-    print(f"\nResultados para {nome_modelo}:")
-    print(f"Acurácia: {acc:.4f}")
-    print(f"Precisão: {prec:.4f}")
-    print(f"Revocação: {rec:.4f}")
 
 imprimir_metricas("k-NN com k=3", y_test, y_pred_knn_k3)
 imprimir_metricas("k-NN com k=7", y_test, y_pred_knn_k7)
 
+salvar_matriz_confusao("k-NN com k=3", y_test, y_pred_knn_k3)
+salvar_matriz_confusao("k-NN com k=7", y_test, y_pred_knn_k7)
+
 
 # modelo 2 : arvore de decisão
-print("Iniciando Treinamento : Árvore de Decisão com profundidade 3")
+print("Iniciando Treinamento : Arvore de Decisão com profundidade 3")
 tree_d3 = DecisionTreeClassifier(max_depth=3, random_state=42)
 tree_d3.fit(X_train, y_train)
 y_pred_tree_d3 = tree_d3.predict(X_test)
 
-print("Iniciando Treinamento : Árvore de Decisão com profundidade 10")
+print("Iniciando Treinamento : Arvore de Decisão com profundidade 10")
 tree_d10 = DecisionTreeClassifier(max_depth=10, random_state=42)
 tree_d10.fit(X_train, y_train)
 y_pred_tree_d10 = tree_d10.predict(X_test)
 
 imprimir_metricas("Arvore de decisão com profundidade 3", y_test, y_pred_tree_d3)
-imprimir_metricas("Árvore de decisão com profundidade 10", y_test, y_pred_tree_d10)
+imprimir_metricas("Arvore de decisão com profundidade 10", y_test, y_pred_tree_d10)
+
+salvar_matriz_confusao("Arvore de decisão com profundidade 3", y_test, y_pred_tree_d3)
+salvar_matriz_confusao("Arvore de decisão com profundidade 10", y_test, y_pred_tree_d10)
 
 
 print("Arvore de Decisão categórica")
@@ -109,6 +136,7 @@ def calcular_entropia(y):
         if p > 0:
             entropia -= p * np.log2(p)
     return entropia
+
 
 
 def calcular_ganho_informacao(X, y, nome_atributo):
@@ -148,7 +176,7 @@ class Node:
 
 
 class ArvoreDecisaoCategorica:
-    """Implementação da árvore de decisão para atributos categóricos. (VERSÃO FINAL CORRIGIDA)"""
+
 
     def __init__(self, profundidade_max=10):
         self.profundidade_max = profundidade_max
@@ -221,7 +249,7 @@ class ArvoreDecisaoCategorica:
         proximo_no = no.filhos[valor_atributo]
         return self._prever_amostra(x, proximo_no)
 
-
+#dividindo a base em treino e teste , mas dessa vez conservando os atributos categoricos
 X_treino, X_teste, y_treino, y_teste = train_test_split(
     X, y_encoded, test_size=0.3, random_state=42
 )
@@ -234,8 +262,11 @@ minhaArvore2.fit(X_treino, y_treino)
 previsoes = minha_arvore.predict(X_teste)
 previsao2 = minhaArvore2.predict(X_teste)
 
-imprimir_metricas("Arvore de decisão com profundidade 3 versao 2", y_teste, previsoes)
-imprimir_metricas("Árvore de decisao com profundidade 10 versão 2", y_teste, previsao2)
+imprimir_metricas("Arvore de decisão categorica com profundidade 3 versao 2", y_teste, previsoes)
+imprimir_metricas("Árvore de decisao categorica com profundidade 10 versão 2", y_teste, previsao2)
+
+salvar_matriz_confusao("Arvore de decisao categorica com profundidade 3 versao 2",y_teste,previsoes)
+salvar_matriz_confusao("Arvore de decisão categorica com profundidade 10 versao 2",y_teste,previsao2)
 
 
 
@@ -256,6 +287,8 @@ y_pred_rf_100 = rf_100.predict(X_test)
 imprimir_metricas("Random Forest com 10 árvores", y_test, y_pred_rf_10)
 imprimir_metricas("Random Forest com 100 arvores", y_test, y_pred_rf_100)
 
+salvar_matriz_confusao("Random Forest com 10 árvores",y_test,y_pred_rf_10)
+salvar_matriz_confusao("Random Forest com 100 arvores",y_test,y_pred_rf_100)
 
 
 
